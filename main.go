@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/MrBista/golang-todo-project/config"
+	"github.com/MrBista/golang-todo-project/src/controllers"
 	"github.com/MrBista/golang-todo-project/src/repository"
 	"github.com/MrBista/golang-todo-project/src/services"
+	"github.com/julienschmidt/httprouter"
 	"github.com/spf13/viper"
 )
 
@@ -25,8 +28,21 @@ func main() {
 	defer db.DB.Close()
 
 	userRepo := repository.NewUserRepository(db)
-	_ = services.NewUserService(userRepo)
+	userService := services.NewUserService(userRepo)
+	userController := controllers.NewUserController(userService)
 
-	// http.ListenAndServe()
+	router := httprouter.New()
+
+	router.POST("/api/v1/auth/register", userController.GetUserByEmail)
+	router.GET("/users/:email", userController.GetUserByEmail)
+
+	server := http.Server{
+		Addr:    "127.0.0.1:8000",
+		Handler: router,
+	}
+
+	err = server.ListenAndServe()
+
+	log.Fatal(err)
 
 }
