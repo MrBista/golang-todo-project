@@ -1,48 +1,57 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/MrBista/golang-todo-project/config"
+	"github.com/MrBista/golang-todo-project/helper"
 	"github.com/MrBista/golang-todo-project/src/controllers"
 	"github.com/MrBista/golang-todo-project/src/repository"
 	"github.com/MrBista/golang-todo-project/src/services"
 	"github.com/julienschmidt/httprouter"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
 func main() {
-	fmt.Println("Hello World!")
 	configViper := viper.New()
 	configViper.SetConfigFile("config.yaml")
 	configViper.AddConfigPath(".")
-	db, err := config.NewDatabase(configViper)
+	logrus.SetLevel(logrus.TraceLevel)
 
-	// ctx := context.Background()
+	if err := configViper.ReadInConfig(); err != nil {
+		logrus.Fatal(err)
 
-	if err != nil {
-		log.Fatal(err)
 	}
-	defer db.DB.Close()
 
-	userRepo := repository.NewUserRepository(db)
-	userService := services.NewUserService(userRepo)
+	db, errDb := config.NewDatabase(configViper)
+	logrus.Info("Masuk sini 0")
+	if errDb != nil {
+		logrus.Fatal(errDb)
+	}
+
+	userRepo := repository.NewUserRepository()
+
+	userService := services.NewUserService(userRepo, db)
+
 	userController := controllers.NewUserController(userService)
 
 	router := httprouter.New()
 
-	router.POST("/api/v1/auth/register", userController.GetUserByEmail)
+	router.POST("/api/v1/auth/register", userController.UserRegister)
+	router.POST("/api/v1/auth/login", userController.LoginUser)
 	router.GET("/users/:email", userController.GetUserByEmail)
 
+	port := configViper.GetString("app.port")
 	server := http.Server{
-		Addr:    "127.0.0.1:8000",
+		Addr:    "127.0.0.1:" + port,
 		Handler: router,
 	}
 
-	err = server.ListenAndServe()
+	helper.Logger().Info("App runing in port " + port)
 
-	log.Fatal(err)
+	err := server.ListenAndServe()
+
+	logrus.Fatal(err)
 
 }

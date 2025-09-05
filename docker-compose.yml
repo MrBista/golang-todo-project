@@ -1,0 +1,18 @@
+services:
+  todo-app-db:
+    container_name: todo-app-db
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_USER: todo-app
+      MYSQL_PASSWORD: todo-app
+      MYSQL_ROOT_PASSWORD: todo-app
+      MYSQL_DATABASE: todo_app
+    ports:
+      - "4001:3306"
+    volumes:
+      - todo_app_volumes:/var/lib/mysql
+
+volumes:
+  todo_app_volumes:
+    name: todo_app_volumes
