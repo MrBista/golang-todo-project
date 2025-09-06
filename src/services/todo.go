@@ -14,6 +14,11 @@ import (
 
 type Todo interface {
 	Create(ctx context.Context, todoReq request.TodoReq) response.TodoResponse
+	Update(ctx context.Context, todoReq request.TodoReq, todoId int) response.TodoResponse
+	FindAll(ctx context.Context, userId int) []response.TodoResponse
+	FindById(ctx context.Context, id int) response.TodoResponse
+	DeleteAll(ctx context.Context, userId int)
+	DeleteById(ctx context.Context, id int)
 }
 
 type TodoImpl struct {
@@ -74,4 +79,151 @@ func (s *TodoImpl) Create(ctx context.Context, todoRoq request.TodoReq) response
 	}
 
 	return todoRes
+}
+
+func (s *TodoImpl) Update(ctx context.Context, todoReq request.TodoReq, todoId int) response.TodoResponse {
+	tx, err := s.DB.Begin()
+
+	if err != nil {
+		helper.Logger().Error(err)
+		panic(err)
+	}
+
+	defer func() {
+		err := recover()
+		if err != nil {
+			errRollback := tx.Rollback()
+			if errRollback != nil {
+				panic(errRollback)
+			}
+		} else {
+			errCommit := tx.Commit()
+			if errCommit != nil {
+				panic(errCommit)
+			}
+		}
+	}()
+
+	s.FindById(ctx, todoId)
+	todo := &model.Todo{
+		Id:          todoId,
+		Title:       todoReq.Title,
+		Description: todoReq.Description,
+		Status:      todoReq.Status,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	err = s.TodoRepository.Update(ctx, tx, *todo)
+
+	if err != nil {
+		panic(err)
+
+	}
+
+	updatedTodo := response.TodoResponse{
+		Id:          todoId,
+		Title:       todo.Title,
+		Description: todo.Description,
+		Status:      todo.Status,
+		CreatedAt:   todo.CreatedAt,
+		UpdatedAt:   todo.UpdatedAt,
+	}
+	return updatedTodo
+
+}
+
+func (s *TodoImpl) FindAll(ctx context.Context, userId int) []response.TodoResponse {
+	panic("not implemented") // TODO: Implement
+}
+
+func (s *TodoImpl) FindById(ctx context.Context, id int) response.TodoResponse {
+	tx, err := s.DB.Begin()
+
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		err := recover()
+		if err != nil {
+			errRollback := tx.Rollback()
+			if errRollback != nil {
+				panic(errRollback)
+			}
+		} else {
+			errCommit := tx.Commit()
+			if errCommit != nil {
+				panic(errCommit)
+			}
+		}
+	}()
+	res, err := s.TodoRepository.FindById(ctx, tx, id)
+
+	if err != nil {
+		panic(err)
+	}
+	return response.TodoResponse{
+		Id:          res.Id,
+		Title:       res.Title,
+		Description: res.Description,
+		Status:      res.Status,
+		CreatedAt:   res.CreatedAt,
+		UpdatedAt:   res.UpdatedAt,
+	}
+}
+
+func (s *TodoImpl) DeleteAll(ctx context.Context, userId int) {
+	tx, err := s.DB.Begin()
+
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		err := recover()
+		if err != nil {
+			errRollback := tx.Rollback()
+			if errRollback != nil {
+				panic(errRollback)
+			}
+		} else {
+			errCommit := tx.Commit()
+			if errCommit != nil {
+				panic(errCommit)
+			}
+		}
+	}()
+
+	err = s.TodoRepository.DeleteAll(ctx, tx, userId)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (s *TodoImpl) DeleteById(ctx context.Context, id int) {
+	tx, err := s.DB.Begin()
+
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		err := recover()
+		if err != nil {
+			errRollback := tx.Rollback()
+			if errRollback != nil {
+				panic(errRollback)
+			}
+		} else {
+			errCommit := tx.Commit()
+			if errCommit != nil {
+				panic(errCommit)
+			}
+		}
+	}()
+
+	s.FindById(ctx, id)
+
+	err = s.TodoRepository.DeleteById(ctx, tx, id)
+	if err != nil {
+		panic(err)
+	}
 }
