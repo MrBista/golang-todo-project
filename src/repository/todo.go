@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/MrBista/golang-todo-project/helper"
 	"github.com/MrBista/golang-todo-project/src/model"
@@ -45,15 +46,15 @@ func (r *TodoImpl) Create(ctx context.Context, sql *sql.Tx, todo *model.Todo) er
 
 	return nil
 }
-func (r *TodoImpl) Update(ctx context.Context, sql *sql.Tx, todo model.Todo) error {
+func (r *TodoImpl) Update(ctx context.Context, tx *sql.Tx, todo model.Todo) error {
 	SQL := `UPDATE todos 
-			SET title = ?
-				description = ?
-				status = ?
+			SET title = ?,
+				description = ?,
+				status = ?,
 				updated_at = ?
 			WHERE id = ?`
 
-	_, err := sql.ExecContext(ctx, SQL, todo.Title, todo.Status, todo.UpdatedAt, todo.Id)
+	_, err := tx.ExecContext(ctx, SQL, todo.Title, todo.Description, todo.Status, time.Now(), todo.Id)
 
 	if err != nil {
 		helper.Logger().Error(err)

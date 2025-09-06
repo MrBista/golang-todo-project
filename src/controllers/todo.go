@@ -91,17 +91,87 @@ func (s *TodoControllerImpl) UpdateTodo(w http.ResponseWriter, r *http.Request, 
 }
 
 func (s *TodoControllerImpl) DeleteByIdTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	panic("not implemented") // TODO: Implement
+	todoIdParam := params.ByName("todoId")
+
+	todoId, err := strconv.Atoi(todoIdParam)
+
+	if err != nil {
+		panic(err)
+	}
+
+	s.TodoService.DeleteById(r.Context(), todoId)
+
+	webResponse := response.CommonResponse{
+		Data:    true,
+		Message: "Successfully delete todo",
+		Status:  http.StatusOK,
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(webResponse)
 }
 
 func (s *TodoControllerImpl) DeleteAllTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	panic("not implemented") // TODO: Implement
+
+	// todo ambil user id dari context middleware
+	userId := 1
+	s.TodoService.DeleteById(r.Context(), userId)
+
+	webResponse := response.CommonResponse{
+		Data:    true,
+		Message: "Successfully delete todo",
+		Status:  http.StatusOK,
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(webResponse)
 }
 
 func (s *TodoControllerImpl) FindByIdTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	panic("not implemented") // TODO: Implement
+	todoIdParam := params.ByName("todoId")
+
+	todoId, err := strconv.Atoi(todoIdParam)
+
+	if err != nil {
+		panic(err)
+	}
+
+	result := s.TodoService.FindById(r.Context(), todoId)
+
+	webResponse := response.CommonResponse{
+		Data:    result,
+		Message: "Successfully find todo",
+		Status:  http.StatusOK,
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(webResponse)
 }
 
 func (s *TodoControllerImpl) FindAllTodo(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	panic("not implemented") // TODO: Implement
+	// todo ambil user id dari context middleware
+	userId := 1
+
+	result := s.TodoService.FindAll(r.Context(), userId)
+
+	webResponse := response.CommonResponse{
+		Data:    result,
+		Message: "Successfully find todo",
+		Status:  http.StatusOK,
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(webResponse)
 }

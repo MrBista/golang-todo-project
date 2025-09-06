@@ -46,6 +46,10 @@ func main() {
 
 	// route todo
 	router.POST("/api/v1/todos", todoController.CreateTodo)
+	router.PUT("/api/v1/todos/:todoId", todoController.UpdateTodo)
+	router.GET("/api/v1/todos/:todoId", todoController.FindByIdTodo)
+	router.GET("/api/v1/todos", todoController.FindAllTodo)
+	router.DELETE("/api/v1/todos/:todoId", todoController.DeleteByIdTodo)
 
 	port := configViper.GetString("app.port")
 	server := http.Server{

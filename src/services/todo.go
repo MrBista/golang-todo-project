@@ -105,6 +105,7 @@ func (s *TodoImpl) Update(ctx context.Context, todoReq request.TodoReq, todoId i
 	}()
 
 	s.FindById(ctx, todoId)
+
 	todo := &model.Todo{
 		Id:          todoId,
 		Title:       todoReq.Title,
@@ -114,10 +115,11 @@ func (s *TodoImpl) Update(ctx context.Context, todoReq request.TodoReq, todoId i
 		UpdatedAt:   time.Now(),
 	}
 
-	err = s.TodoRepository.Update(ctx, tx, *todo)
+	errTodo := s.TodoRepository.Update(ctx, tx, *todo)
 
-	if err != nil {
-		panic(err)
+	if errTodo != nil {
+		helper.Logger().Error(errTodo)
+		panic(errTodo)
 
 	}
 
@@ -160,6 +162,7 @@ func (s *TodoImpl) FindById(ctx context.Context, id int) response.TodoResponse {
 	res, err := s.TodoRepository.FindById(ctx, tx, id)
 
 	if err != nil {
+		helper.Logger().Error(err)
 		panic(err)
 	}
 	return response.TodoResponse{
