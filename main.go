@@ -31,16 +31,21 @@ func main() {
 	}
 
 	userRepo := repository.NewUserRepository()
-
 	userService := services.NewUserService(userRepo, db)
-
 	userController := controllers.NewUserController(userService)
+
+	todoRepo := repository.NewTodo()
+	todoServices := services.NewTodo(todoRepo, db)
+	todoController := controllers.NewTodoController(todoServices)
 
 	router := httprouter.New()
 
+	// auth
 	router.POST("/api/v1/auth/register", userController.UserRegister)
 	router.POST("/api/v1/auth/login", userController.LoginUser)
-	router.GET("/users/:email", userController.GetUserByEmail)
+
+	// route todo
+	router.POST("/api/v1/todos", todoController.CreateTodo)
 
 	port := configViper.GetString("app.port")
 	server := http.Server{
