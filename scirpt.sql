@@ -32,3 +32,5 @@ create table if not exists todos (
     updated_at timestamp default current_timestamp on update current_timestamp,
     foreign key (user_id) references users(id) on delete cascade
 );
+
+SELECT * from users order by id desc;

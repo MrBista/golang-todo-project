@@ -74,6 +74,10 @@ func (repo *UserRepositryImpl) CreateUser(ctx context.Context, tx *sql.Tx, user 
 		panic(err)
 	}
 
+	if num, err := res.RowsAffected(); err != nil && num == 0 {
+		panic("no rows effected")
+	}
+
 	lastIdInserted, err := res.LastInsertId()
 
 	if err != nil {

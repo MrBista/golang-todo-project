@@ -14,7 +14,7 @@ func CreateToken(userId, role int) (string, error) {
 		"roleId": role,
 	})
 
-	tokenString, err := token.SignedString(secretKey)
+	tokenString, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		return "", err
 	}

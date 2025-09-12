@@ -5,10 +5,10 @@ import (
 
 	"github.com/MrBista/golang-todo-project/config"
 	"github.com/MrBista/golang-todo-project/helper"
+	"github.com/MrBista/golang-todo-project/src/app"
 	"github.com/MrBista/golang-todo-project/src/controllers"
 	"github.com/MrBista/golang-todo-project/src/repository"
 	"github.com/MrBista/golang-todo-project/src/services"
-	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -38,18 +38,7 @@ func main() {
 	todoServices := services.NewTodo(todoRepo, db)
 	todoController := controllers.NewTodoController(todoServices)
 
-	router := httprouter.New()
-
-	// auth
-	router.POST("/api/v1/auth/register", userController.UserRegister)
-	router.POST("/api/v1/auth/login", userController.LoginUser)
-
-	// route todo
-	router.POST("/api/v1/todos", todoController.CreateTodo)
-	router.PUT("/api/v1/todos/:todoId", todoController.UpdateTodo)
-	router.GET("/api/v1/todos/:todoId", todoController.FindByIdTodo)
-	router.GET("/api/v1/todos", todoController.FindAllTodo)
-	router.DELETE("/api/v1/todos/:todoId", todoController.DeleteByIdTodo)
+	router := app.NewRouter(userController, todoController)
 
 	port := configViper.GetString("app.port")
 	server := http.Server{

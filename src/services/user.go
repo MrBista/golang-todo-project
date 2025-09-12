@@ -53,10 +53,17 @@ func (s *UserServiceImpl) RegisterUser(ctx context.Context, reqBody request.Regi
 		}
 	}()
 
+	password, err := helper.HashPassword(reqBody.Password)
+
+	if err != nil {
+		// bisa pakai pesan custom
+		panic(err)
+	}
+
 	user := model.User{
 		Username: reqBody.Username,
 		Email:    reqBody.Email,
-		Password: reqBody.Password, // sementara plan text
+		Password: string(password), // sementara plan text
 		FullName: reqBody.FullName,
 	}
 
@@ -94,12 +101,15 @@ func (s *UserServiceImpl) LoginUser(ctx context.Context, req request.LoginUserRe
 		panic(err)
 	}
 
-	if req.Password != findUserIdentifier.Password {
-		helper.Logger().Error("mismatch password")
-		panic("username/password not found")
+	if err := helper.ComparePassword(req.Password, findUserIdentifier.Password); err != nil {
+		panic("username/password is wrong")
 	}
 
-	accessToken := "generatedAccessToken"
+	accessToken, err := helper.CreateToken(findUserIdentifier.Id, 1)
+
+	if err != nil {
+		panic(err)
+	}
 
 	expIn := 5
 
