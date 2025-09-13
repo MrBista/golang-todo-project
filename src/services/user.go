@@ -7,13 +7,14 @@ import (
 	"github.com/MrBista/golang-todo-project/helper"
 	"github.com/MrBista/golang-todo-project/src/dto/request"
 	"github.com/MrBista/golang-todo-project/src/dto/response"
+	"github.com/MrBista/golang-todo-project/src/exception"
 	"github.com/MrBista/golang-todo-project/src/model"
 	"github.com/MrBista/golang-todo-project/src/repository"
 	"github.com/sirupsen/logrus"
 )
 
 type UserService interface {
-	RegisterUser(ctx context.Context, req request.RegisterUserRequest) response.RegisterUserResponse
+	RegisterUser(ctx context.Context, req request.RegisterUserRequest) (response.RegisterUserResponse, error)
 	LoginUser(ctx context.Context, req request.LoginUserReq) response.LoginUserRes
 }
 
@@ -29,7 +30,12 @@ func NewUserService(userRepo repository.UserRepositry, db *sql.DB) UserService {
 	}
 }
 
-func (s *UserServiceImpl) RegisterUser(ctx context.Context, reqBody request.RegisterUserRequest) response.RegisterUserResponse {
+func (s *UserServiceImpl) RegisterUser(ctx context.Context, reqBody request.RegisterUserRequest) (response.RegisterUserResponse, error) {
+
+	err := s.validateRegisterRequest(reqBody)
+	if err != nil {
+		return response.RegisterUserResponse{}, err
+	}
 	trx, err := s.DB.Begin()
 
 	if err != nil {
@@ -76,7 +82,7 @@ func (s *UserServiceImpl) RegisterUser(ctx context.Context, reqBody request.Regi
 		FullName: userSaved.FullName,
 	}
 
-	return userResponse
+	return userResponse, nil
 }
 
 func (s *UserServiceImpl) LoginUser(ctx context.Context, req request.LoginUserReq) response.LoginUserRes {
@@ -120,4 +126,28 @@ func (s *UserServiceImpl) LoginUser(ctx context.Context, req request.LoginUserRe
 	}
 
 	return result
+}
+
+// validateRegisterRequest validates the register request
+func (s *UserServiceImpl) validateRegisterRequest(req request.RegisterUserRequest) error {
+	fieldErrors := make(map[string]string)
+
+	// Example validations - adjust according to your struct
+	if req.Email == "" {
+		fieldErrors["email"] = "Email is required"
+	}
+	if req.Username == "" {
+		fieldErrors["username"] = "Username is required"
+	}
+	if req.Password == "" {
+		fieldErrors["password"] = "Password is required"
+	} else if len(req.Password) < 6 {
+		fieldErrors["password"] = "Password must be at least 6 characters"
+	}
+
+	if len(fieldErrors) > 0 {
+		return exception.NewValidationError("Validation failed", fieldErrors)
+	}
+
+	return nil
 }

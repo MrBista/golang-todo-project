@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/MrBista/golang-todo-project/src/controllers"
+	"github.com/MrBista/golang-todo-project/src/exception"
 	"github.com/MrBista/golang-todo-project/src/middleware"
 	"github.com/julienschmidt/httprouter"
 )
@@ -26,5 +27,6 @@ func NewRouter(userController controllers.UserController, todoController control
 	authRouter(router, userController)
 	todoRouter(router, todoController)
 
+	router.PanicHandler = exception.ErrorHandler
 	return router
 }

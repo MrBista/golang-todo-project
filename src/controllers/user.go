@@ -7,6 +7,8 @@ import (
 	"github.com/MrBista/golang-todo-project/helper"
 	"github.com/MrBista/golang-todo-project/src/dto/request"
 	"github.com/MrBista/golang-todo-project/src/dto/response"
+	"github.com/MrBista/golang-todo-project/src/exception"
+	"github.com/MrBista/golang-todo-project/src/handler"
 	"github.com/MrBista/golang-todo-project/src/services"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
@@ -45,11 +47,16 @@ func (s *UserControllerImpl) UserRegister(w http.ResponseWriter, r *http.Request
 	err := decode.Decode(&reqUserBody)
 	if err != nil {
 		logger.Error(err)
-		panic(err)
+		handler.HandleError(w, exception.NewBadReqeust("Invalid JSON format body"))
+		return
 	}
 
-	userRes := s.UserService.RegisterUser(r.Context(), reqUserBody)
-	logger.Debug(userRes)
+	userRes, err := s.UserService.RegisterUser(r.Context(), reqUserBody)
+	logger.Error(err)
+	if err != nil {
+		handler.HandleError(w, err)
+		return
+	}
 	responseResult := response.CommonResponse{
 		Data:    userRes,
 		Status:  http.StatusOK,
