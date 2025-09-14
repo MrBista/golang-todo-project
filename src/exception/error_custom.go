@@ -63,6 +63,14 @@ func NewNotFoundData(message string) *ErrorResponse {
 	}
 }
 
+func NewDbError(message string) *ErrorResponse {
+	return &ErrorResponse{
+		Code:    ErrCodeDatabase,
+		Message: message,
+		Status:  http.StatusBadRequest,
+	}
+}
+
 func NewInternalServerError(message string) *ErrorResponse {
 	return &ErrorResponse{
 		Message: message,

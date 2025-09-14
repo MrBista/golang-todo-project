@@ -3,18 +3,20 @@ package services
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/MrBista/golang-todo-project/helper"
 	"github.com/MrBista/golang-todo-project/src/dto/request"
 	"github.com/MrBista/golang-todo-project/src/dto/response"
+	"github.com/MrBista/golang-todo-project/src/exception"
 	"github.com/MrBista/golang-todo-project/src/model"
 	"github.com/MrBista/golang-todo-project/src/repository"
 )
 
 type Todo interface {
-	Create(ctx context.Context, todoReq request.TodoReq) response.TodoResponse
-	Update(ctx context.Context, todoReq request.TodoReq, todoId int) response.TodoResponse
+	Create(ctx context.Context, todoReq request.TodoReq) (response.TodoResponse, error)
+	Update(ctx context.Context, todoReq request.TodoReq, todoId int) (response.TodoResponse, error)
 	FindAll(ctx context.Context, userId int) []response.TodoResponse
 	FindById(ctx context.Context, id int) response.TodoResponse
 	DeleteAll(ctx context.Context, userId int)
@@ -34,7 +36,33 @@ func NewTodo(TodoRepository repository.Todo, Db *sql.DB) Todo {
 	}
 }
 
-func (s *TodoImpl) Create(ctx context.Context, todoRoq request.TodoReq) response.TodoResponse {
+func (s *TodoImpl) validateCreateTodo(todoBody request.TodoReq) error {
+	fieldErrors := make(map[string]string)
+
+	if todoBody.Title == "" {
+		fieldErrors["title"] = "Title is required"
+	}
+
+	if len(todoBody.Title) < 5 {
+		fieldErrors["title"] = "Title atleast 5 character"
+	}
+
+	if todoBody.Description == "" {
+		fieldErrors["description"] = "Description is required"
+	}
+
+	if len(fieldErrors) > 0 {
+		return exception.NewValidationError("Validatoin error", fieldErrors)
+	}
+
+	return nil
+}
+
+func (s *TodoImpl) Create(ctx context.Context, todoRoq request.TodoReq) (response.TodoResponse, error) {
+
+	if err := s.validateCreateTodo(todoRoq); err != nil {
+		return response.TodoResponse{}, err
+	}
 
 	trx, err := s.DB.Begin()
 
@@ -78,10 +106,18 @@ func (s *TodoImpl) Create(ctx context.Context, todoRoq request.TodoReq) response
 		UpdatedAt:   todo.UpdatedAt,
 	}
 
-	return todoRes
+	return todoRes, nil
 }
 
-func (s *TodoImpl) Update(ctx context.Context, todoReq request.TodoReq, todoId int) response.TodoResponse {
+func (s *TodoImpl) Update(ctx context.Context, todoReq request.TodoReq, todoId int) (response.TodoResponse, error) {
+
+	if err := s.validateCreateTodo(todoReq); err != nil {
+		return response.TodoResponse{}, err
+	}
+	if todoId == 0 {
+		return response.TodoResponse{}, exception.NewBadReqeust("todoId is required")
+	}
+
 	tx, err := s.DB.Begin()
 
 	if err != nil {
@@ -119,7 +155,8 @@ func (s *TodoImpl) Update(ctx context.Context, todoReq request.TodoReq, todoId i
 
 	if errTodo != nil {
 		helper.Logger().Error(errTodo)
-		panic(errTodo)
+
+		return response.TodoResponse{}, exception.NewDbError(fmt.Errorf("terjadi keslaahan %w", errTodo).Error())
 
 	}
 
@@ -131,7 +168,7 @@ func (s *TodoImpl) Update(ctx context.Context, todoReq request.TodoReq, todoId i
 		CreatedAt:   todo.CreatedAt,
 		UpdatedAt:   todo.UpdatedAt,
 	}
-	return updatedTodo
+	return updatedTodo, nil
 
 }
 

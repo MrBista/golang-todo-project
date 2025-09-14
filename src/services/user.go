@@ -15,7 +15,7 @@ import (
 
 type UserService interface {
 	RegisterUser(ctx context.Context, req request.RegisterUserRequest) (response.RegisterUserResponse, error)
-	LoginUser(ctx context.Context, req request.LoginUserReq) response.LoginUserRes
+	LoginUser(ctx context.Context, req request.LoginUserReq) (response.LoginUserRes, error)
 }
 
 type UserServiceImpl struct {
@@ -73,7 +73,11 @@ func (s *UserServiceImpl) RegisterUser(ctx context.Context, reqBody request.Regi
 		FullName: reqBody.FullName,
 	}
 
-	userSaved := s.userRepository.CreateUser(ctx, trx, user)
+	userSaved, err := s.userRepository.CreateUser(ctx, trx, user)
+
+	if err != nil {
+		return response.RegisterUserResponse{}, err
+	}
 
 	userResponse := response.RegisterUserResponse{
 		Id:       userSaved.Id,
@@ -85,13 +89,17 @@ func (s *UserServiceImpl) RegisterUser(ctx context.Context, reqBody request.Regi
 	return userResponse, nil
 }
 
-func (s *UserServiceImpl) LoginUser(ctx context.Context, req request.LoginUserReq) response.LoginUserRes {
+func (s *UserServiceImpl) LoginUser(ctx context.Context, req request.LoginUserReq) (response.LoginUserRes, error) {
 
 	// 1. cari dulu user nya
 	// 2. kalau ga ada maka panic
 	// 3. kala ada maka check dulu passwordnya
 	// 4. kalau ga match maka panic
 	// 5. genereate jwt dengan user id dan exp time dari viper
+
+	if err := s.validateLogin(req); err != nil {
+		return response.LoginUserRes{}, err
+	}
 
 	trx, err := s.DB.Begin()
 
@@ -104,17 +112,20 @@ func (s *UserServiceImpl) LoginUser(ctx context.Context, req request.LoginUserRe
 
 	if err != nil {
 		helper.Logger().Error(err)
-		panic(err)
+		errMessage := err.Error()
+		return response.LoginUserRes{}, exception.NewDbError(errMessage)
 	}
 
 	if err := helper.ComparePassword(req.Password, findUserIdentifier.Password); err != nil {
-		panic("username/password is wrong")
+
+		return response.LoginUserRes{}, exception.NewBadReqeust("username/password is wrong")
 	}
 
 	accessToken, err := helper.CreateToken(findUserIdentifier.Id, 1)
 
 	if err != nil {
-		panic(err)
+
+		return response.LoginUserRes{}, exception.NewBadReqeust(err.Error())
 	}
 
 	expIn := 5
@@ -125,7 +136,7 @@ func (s *UserServiceImpl) LoginUser(ctx context.Context, req request.LoginUserRe
 		Exp:         expIn,
 	}
 
-	return result
+	return result, nil
 }
 
 // validateRegisterRequest validates the register request
@@ -147,6 +158,24 @@ func (s *UserServiceImpl) validateRegisterRequest(req request.RegisterUserReques
 
 	if len(fieldErrors) > 0 {
 		return exception.NewValidationError("Validation failed", fieldErrors)
+	}
+
+	return nil
+}
+
+func (s *UserServiceImpl) validateLogin(req request.LoginUserReq) error {
+	fieldErrors := make(map[string]string)
+
+	if req.Identifier == "" {
+		fieldErrors["identifier"] = "Identifier is required"
+	}
+
+	if req.Password == "" {
+		fieldErrors["password"] = "password is required"
+	}
+
+	if len(fieldErrors) > 0 {
+		return exception.NewValidationError("Validation error", fieldErrors)
 	}
 
 	return nil

@@ -71,6 +71,7 @@ func (s *UserControllerImpl) UserRegister(w http.ResponseWriter, r *http.Request
 	err = encoder.Encode(responseResult)
 
 	if err != nil {
+		logrus.Error(err)
 		panic(err)
 	}
 
@@ -82,7 +83,12 @@ func (s *UserControllerImpl) LoginUser(w http.ResponseWriter, r *http.Request, p
 	decoder := json.NewDecoder(r.Body)
 	decoder.Decode(&reqLogin)
 
-	loginUser := s.UserService.LoginUser(r.Context(), reqLogin)
+	loginUser, err := s.UserService.LoginUser(r.Context(), reqLogin)
+
+	if err != nil {
+		handler.HandleError(w, err)
+		return
+	}
 
 	resResult := response.CommonResponse{
 		Data:    loginUser,
@@ -94,7 +100,7 @@ func (s *UserControllerImpl) LoginUser(w http.ResponseWriter, r *http.Request, p
 	w.WriteHeader(http.StatusOK)
 	encoder := json.NewEncoder(w)
 
-	err := encoder.Encode(resResult)
+	err = encoder.Encode(resResult)
 
 	if err != nil {
 		helper.Logger().Error(err)

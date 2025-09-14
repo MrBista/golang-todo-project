@@ -65,24 +65,24 @@ func (repo *UserRepositryImpl) FindByEmailOrUsername(ctx context.Context, tx *sq
 	return user, nil
 }
 
-func (repo *UserRepositryImpl) CreateUser(ctx context.Context, tx *sql.Tx, user model.User) model.User {
+func (repo *UserRepositryImpl) CreateUser(ctx context.Context, tx *sql.Tx, user model.User) (model.User, error) {
 	SQL := "insert into users(username, email, password, full_name) values(?, ?, ?, ?)"
 
 	res, err := tx.ExecContext(ctx, SQL, user.Username, user.Email, user.Password, user.FullName)
 
 	if err != nil {
-		panic(err)
+		return user, fmt.Errorf("terjadi kesalahan %w", err)
 	}
 
 	if num, err := res.RowsAffected(); err != nil && num == 0 {
-		panic("no rows effected")
+		return user, fmt.Errorf("terjadi kesalahan %w", err)
 	}
 
 	lastIdInserted, err := res.LastInsertId()
 
 	if err != nil {
-		panic(err)
+		return user, fmt.Errorf("terjadi keslahan %w", err)
 	}
 	user.Id = int(lastIdInserted)
-	return user
+	return user, nil
 }

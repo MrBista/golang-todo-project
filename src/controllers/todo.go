@@ -2,12 +2,14 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
-	"github.com/MrBista/golang-todo-project/helper"
 	"github.com/MrBista/golang-todo-project/src/dto/request"
 	"github.com/MrBista/golang-todo-project/src/dto/response"
+	"github.com/MrBista/golang-todo-project/src/exception"
+	"github.com/MrBista/golang-todo-project/src/handler"
 	"github.com/MrBista/golang-todo-project/src/services"
 	"github.com/julienschmidt/httprouter"
 )
@@ -38,11 +40,17 @@ func (s *TodoControllerImpl) CreateTodo(w http.ResponseWriter, r *http.Request, 
 
 	err := decoder.Decode(&todoReq)
 	if err != nil {
-		helper.Logger().Error(err)
-		panic(err)
+		errRes := exception.NewBadReqeust(fmt.Errorf("terjadi kesalahan %w", err).Error())
+		handler.HandleError(w, errRes)
+		return
 	}
 
-	result := s.TodoService.Create(r.Context(), todoReq)
+	result, err := s.TodoService.Create(r.Context(), todoReq)
+
+	if err != nil {
+		handler.HandleError(w, err)
+		return
+	}
 
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -65,7 +73,9 @@ func (s *TodoControllerImpl) UpdateTodo(w http.ResponseWriter, r *http.Request, 
 	err := decode.Decode(&updateBody)
 
 	if err != nil {
-		panic(err)
+		errRes := exception.NewBadReqeust(fmt.Errorf("terjadi kesalahan %w", err).Error())
+		handler.HandleError(w, errRes)
+		return
 	}
 
 	todoId, err := strconv.Atoi(todoIdParam)
@@ -74,7 +84,12 @@ func (s *TodoControllerImpl) UpdateTodo(w http.ResponseWriter, r *http.Request, 
 		panic(err)
 	}
 
-	resTodo := s.TodoService.Update(r.Context(), updateBody, todoId)
+	resTodo, err := s.TodoService.Update(r.Context(), updateBody, todoId)
+
+	if err != nil {
+		handler.HandleError(w, err)
+		return
+	}
 
 	webResponse := response.CommonResponse{
 		Data:    resTodo,
